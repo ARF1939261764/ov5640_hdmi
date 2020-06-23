@@ -1,0 +1,49 @@
+module sccb_controller_test_ov5640(
+  input  logic      clk,
+  input  logic      rest_n,
+  output logic      sccb_scl,
+  output logic      sccb_sda,
+  output logic[7:0] sccb_read_data
+);
+
+logic[7:0]  device_addr;
+logic[15:0] sub_addr;
+logic       read;
+logic       write;
+logic[7:0]  write_data;
+logic       request_ready;
+logic[7:0]  read_data;
+logic       resp_valid;
+logic       resp_ready;
+
+assign device_addr = 8'h78;
+assign sub_addr    = 16'h300A;
+assign read        = 1'd1;
+assign write       = 1'd0;
+assign write_data  = 8'd55;
+assign resp_ready  = 1'd1;
+
+assign sccb_read_data = read_data;
+
+
+sccb_controller #(
+  .SCL_DIV       (500),
+  .SUB_ADDR_WIDTH(16)
+)
+sccb_controller_inst0(
+  .clk          (clk          ),
+  .rest_n       (rest_n       ),
+  .device_addr  (device_addr  ),
+  .sub_addr     (sub_addr     ),
+  .read         (read         ),
+  .write        (write        ),
+  .write_data   (write_data   ),
+  .request_ready(request_ready),
+  .read_data    (read_data    ),
+  .resp_valid   (resp_valid   ),
+  .resp_ready   (resp_ready   ),
+  .sccb_scl     (sccb_scl     ),
+  .sccb_sda     (sccb_sda     )
+);
+
+endmodule
