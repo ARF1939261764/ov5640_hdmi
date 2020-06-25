@@ -21,7 +21,6 @@ logic[7:0]  write_data;
 logic       request_done;
 logic[7:0]  read_data;
 logic       resp_valid;
-logic       resp_ready;
 
 reg[31:0] power_up_time;
 
@@ -41,7 +40,6 @@ assign sub_addr    = 16'h300E;
 assign read        = power_up_time > 5000000;
 assign write       = 1'd0;
 assign write_data  = 8'h55;
-assign resp_ready  = 1'd1;
 
 assign sccb_read_data = read_data;
 
@@ -61,7 +59,6 @@ sccb_controller_inst0(
   .request_done (request_done),
   .read_data    (read_data    ),
   .resp_valid   (resp_valid   ),
-  .resp_ready   (resp_ready   ),
   .sccb_scl     (sccb_scl     ),
   .sccb_sda     (sccb_sda     )
 );

@@ -163,7 +163,7 @@ localparam ModeRegValue={
   3'b000,/*保留*/
   1'b0,/*突发读/写*/
   2'b00,/*保留*/
-  {1'd0,T_CL},/*潜伏期为2*/
+  {1'd0,T_CL[1:0]},/*潜伏期为2*/
   1'b0,/*顺序模式*/
   3'b111
 };
@@ -185,7 +185,6 @@ logic[15:0]                   rw_num_t2;
 logic[15:0]                   rw_num_t3;
 logic[15:0]                   rw_num_t4;
 logic[$clog2(`ALV_BURST_MAX_COUNT)+1:0] rw_num;
-logic[$clog2(`ALV_BURST_MAX_COUNT)+1:0] rw_count;
 
 /********************************************************************************************************
 端口数据
@@ -296,102 +295,110 @@ always @(posedge clk or negedge rest_n) begin
   end
 end
 /*第二段:信号输出*/
-always @(posedge clk) begin
-  case(state)
-    i_power_up:begin
-        sdram_cmd<=`end_i_power_up?`CMD_NOP:`CMD_INIT;
-        /*count自加1*/
-        count<=`end_i_power_up?16'd0:(count+16'd1);
-      end
-    i_precharge_all_banks:begin
-        sdram_cmd<=(count==0)?`CMD_PRGE:`CMD_NOP;
-        sdram_addr[10]<=1'd1;/*所有Bank预充电*/
-        /*count自加1*/
-        count<=`end_i_precharge_all_banks?16'd0:(count+16'd1);
-      end
-    i_auto_ref:begin
-        sdram_cmd<=((count==32'd0)||(count==T_RFC))?`CMD_A_REF:`CMD_NOP;
-        /*count自加1*/
-        count<=`end_i_auto_ref?16'd0:(count+16'd1);
-      end
-    i_set_mode_reg:begin
-        sdram_cmd<=(count==32'd0)?`CMD_LMR:`CMD_NOP;
-        sdram_addr=ModeRegValue;
-        sdram_bank<=2'd0;
-        /*count自加1*/
-        count<=`end_i_set_mode_reg?16'd0:(count+16'd1);
-      end
-    w_idle:begin
-        sdram_cmd<=`CMD_NOP;
-        count<=16'd0;
-        start_ref<=1'd0;
-        request_ready<=1'd0;
-        rw_num   <= begin_burst_transfer?2'd2*(burst_count+1'd1):2'd2;
-        rw_count <= 1'd0;
-      end
-    w_auto_ref:begin
-        start_ref<=(count==32'd0)?1'd1:1'd0;
-        sdram_cmd<=(count==32'd0)?`CMD_A_REF:`CMD_NOP;
-        /*count自加1*/
-        count<=`end_w_auto_ref?16'd0:(count+16'd1);
-      end
-    w_active_row:begin
-        sdram_cmd<=(count==32'd0)?`CMD_ACTIVE:`CMD_NOP;
-        sdram_bank<=address[24:23];
-        sdram_addr<=address[22:10];
-        /*count自加1*/
-        count<=`end_w_active_row?16'd0:(count+16'd1);
-      end
-    w_read_cmd:begin
-        sdram_cmd<=(count==32'd0)?`CMD_READ:`CMD_NOP;
-        sdram_bank<=address[24:23];
-        sdram_addr<={2'd0,1'b1,1'b0,address[9:2],1'b0};/*使能自动预充电*/
-        sdram_dqm<=2'b00;
-        /*count自加1*/
-        count<=`end_w_read_cmd?16'd0:(count+16'd1);
-      end
-    w_read_data:begin
-        read_data        <=  {read_data[15:0],sdram_data_i_buff};
-        read_data_valid <=   count[0]?1'd1:1'd0;
-        request_ready   <=  count[0]?1'd0:1'd1;
-        sdram_dqm        <=  2'b00;
-        sdram_cmd       <=  `flag_r_send_term?`CMD_TERMINATE:`CMD_NOP;
-        /*count自加1*/
-        count            <=  `end_w_read_data?16'd0:(count+16'd1);
-      end
-    w_write_data:begin
-        sdram_bank<=address[24:23];
-        sdram_addr<={2'd0,1'b1,1'b0,address[7:0],1'b0};/*使能自动预充电*/
-        case(count[0])
-          32'd0:begin
-              sdram_data_o<=write_data[31:16];
-              sdram_dqm<=~byte_en[3:2];
-            end
-          32'd1:begin
-              sdram_data_o<=write_data[15:0];
-              sdram_dqm<=~byte_en[1:0];
-            end
-        endcase
-        request_ready   <=  count[0]?1'd0:1'd1;
-        if(count==32'd0) begin
-          sdram_cmd <= `CMD_WRITE;
+always @(posedge clk or negedge rest_n) begin
+  if(!rest_n) begin
+    request_ready   <= 1'd0;
+    count           <= 1'd0;
+    read_data_valid <= 1'd0;
+    sdram_cmd       <= `CMD_INIT;
+  end
+  else begin
+    case(state)
+      i_power_up:begin
+          sdram_cmd<=`end_i_power_up?`CMD_NOP:`CMD_INIT;
+          /*count自加1*/
+          count<=`end_i_power_up?16'd0:(count+16'd1);
         end
-        else begin
-          sdram_cmd <= `flag_w_send_term?`CMD_TERMINATE:`CMD_NOP;
+      i_precharge_all_banks:begin
+          sdram_cmd<=(count==0)?`CMD_PRGE:`CMD_NOP;
+          sdram_addr[10]<=1'd1;/*所有Bank预充电*/
+          /*count自加1*/
+          count<=`end_i_precharge_all_banks?16'd0:(count+16'd1);
         end
-        /*count自加1*/
-        count<=`end_w_write_data?16'd0:(count+16'd1);
-      end
-    w_percharge:begin
-        read_data_valid<=1'd0;
-        sdram_cmd<=(count==32'd0)?`CMD_PRGE:`CMD_NOP;
-        sdram_addr[10]<=1'd1;
-        /*count自加1*/
-        count<=`end_w_percharge?16'd0:(count+16'd1);
-      end
-    default:begin
-      end
-  endcase
+      i_auto_ref:begin
+          sdram_cmd<=((count==32'd0)||(count==T_RFC))?`CMD_A_REF:`CMD_NOP;
+          /*count自加1*/
+          count<=`end_i_auto_ref?16'd0:(count+16'd1);
+        end
+      i_set_mode_reg:begin
+          sdram_cmd<=(count==32'd0)?`CMD_LMR:`CMD_NOP;
+          sdram_addr=ModeRegValue;
+          sdram_bank<=2'd0;
+          /*count自加1*/
+          count<=`end_i_set_mode_reg?16'd0:(count+16'd1);
+        end
+      w_idle:begin
+          sdram_cmd<=`CMD_NOP;
+          count<=16'd0;
+          start_ref<=1'd0;
+          request_ready<=1'd0;
+          rw_num   <= begin_burst_transfer?2'd2*(burst_count+1'd1):2'd2;
+        end
+      w_auto_ref:begin
+          start_ref<=(count==32'd0)?1'd1:1'd0;
+          sdram_cmd<=(count==32'd0)?`CMD_A_REF:`CMD_NOP;
+          /*count自加1*/
+          count<=`end_w_auto_ref?16'd0:(count+16'd1);
+        end
+      w_active_row:begin
+          sdram_cmd<=(count==32'd0)?`CMD_ACTIVE:`CMD_NOP;
+          sdram_bank<=address[24:23];
+          sdram_addr<=address[22:10];
+          /*count自加1*/
+          count<=`end_w_active_row?16'd0:(count+16'd1);
+        end
+      w_read_cmd:begin
+          sdram_cmd<=(count==32'd0)?`CMD_READ:`CMD_NOP;
+          sdram_bank<=address[24:23];
+          sdram_addr<={2'd0,1'b1,1'b0,address[9:2],1'b0};/*使能自动预充电*/
+          sdram_dqm<=2'b00;
+          /*count自加1*/
+          count<=`end_w_read_cmd?16'd0:(count+16'd1);
+        end
+      w_read_data:begin
+          read_data        <=  {read_data[15:0],sdram_data_i_buff};
+          read_data_valid <=   count[0]?1'd1:1'd0;
+          request_ready   <=   count[0]?1'd0:1'd1;
+          sdram_dqm        <=  2'b00;
+          sdram_cmd       <=  `flag_r_send_term?`CMD_TERMINATE:`CMD_NOP;
+          /*count自加1*/
+          count            <=  `end_w_read_data?16'd0:(count+16'd1);
+        end
+      w_write_data:begin
+          sdram_bank<=address[24:23];
+          sdram_addr<={2'd0,1'b1,1'b0,address[7:0],1'b0};/*使能自动预充电*/
+          case(count[0])
+            32'd0:begin
+                sdram_data_o<=write_data[31:16];
+                sdram_dqm<=~byte_en[3:2];
+              end
+            32'd1:begin
+                sdram_data_o<=write_data[15:0];
+                sdram_dqm<=~byte_en[1:0];
+              end
+          endcase
+          request_ready   <=  count[0]?1'd0:1'd1;
+          if(count==32'd0) begin
+            sdram_cmd <= `CMD_WRITE;
+          end
+          else begin
+            sdram_cmd <= `flag_w_send_term?`CMD_TERMINATE:`CMD_NOP;
+          end
+          /*count自加1*/
+          count<=`end_w_write_data?16'd0:(count+16'd1);
+        end
+      w_percharge:begin
+          read_data_valid<=1'd0;
+          request_ready<=1'd0;
+          sdram_cmd<=(count==32'd0)?`CMD_PRGE:`CMD_NOP;
+          sdram_addr[10]<=1'd1;
+          /*count自加1*/
+          count<=`end_w_percharge?16'd0:(count+16'd1);
+        end
+      default:begin
+        end
+    endcase
+  end
 end
 
 /********************************************************************************************************

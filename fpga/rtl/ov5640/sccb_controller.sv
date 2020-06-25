@@ -12,7 +12,6 @@ module sccb_controller #(
   output logic       request_done,
   output logic[7:0]  read_data,
   output logic       resp_valid,
-  input  logic       resp_ready,
   output logic       error,
   output logic       sccb_scl,
   inout  logic       sccb_sda
@@ -98,7 +97,7 @@ always @(posedge clk or negedge rest_n) begin
     if((div_count == 16'd0)||(state == state_idle)) begin
       case(state)
         state_idle:begin
-            state <= (request_done&&(read||write))?state_rw_start:state_idle;
+            state <= (read||write)&&!request_done?state_rw_start:state_idle;
           end
         state_rw_start:begin
             state <= end_flag_state_rw_start?state_rw_device_addr:state_rw_start;
@@ -172,9 +171,8 @@ always @(posedge clk) begin
           sccb_scl     <= 1'd1;
           sccb_sda_o   <= 1'd1;
           rw           <= 1'd0;
-          if(resp_ready) begin
-            resp_valid <= 1'd0;
-          end
+          resp_valid   <= 1'd0;
+          request_done <= 1'd0;
           if(read||write) begin
             cmd.device_addr <= device_addr;
             cmd.sub_addr    <= sub_addr;
@@ -182,7 +180,7 @@ always @(posedge clk) begin
             cmd.write       <= write;
             cmd.write_data  <= write_data ;
           end
-          if(request_done&&(read||write)) begin
+          if((read||write)&&!request_done) begin
             /*开始新的处理,清除错误标志*/
             error <= 1'd0;
           end
@@ -220,10 +218,9 @@ always @(posedge clk) begin
           rw            <= end_flag_state_rw_stop?1'd1:rw;
           sccb_scl      <= count[2] || count[1] || count[0];
           sccb_sda_o    <= count[2] || count[1];
+          request_done  <= (end_flag_state_rw_stop && cmd.write || (end_flag_state_rw_stop&&rw))?1'd1:1'd0;
+          resp_valid    <= end_flag_state_rw_stop&&rw?1'd1:1'd0;
           count         <= end_flag_state_rw_stop?1'd0:count+1'd1;
-          if(resp_ready) begin
-            resp_valid  <= 1'd0;
-          end
         end
       state_w_write_data:begin
           /*发送需要写入到从器级的数据*/
@@ -239,7 +236,6 @@ always @(posedge clk) begin
           sccb_sda_o    <= 1'd1;
           sccb_scl      <= count[1] ^ count[0];
           count         <= end_flag_state_r_read_data?1'd0:count+1'd1;
-          resp_valid    <= end_flag_state_r_read_data?1'd1:1'd0;
         end
       state_rw_err_handle:begin
           /*记录错误*/
@@ -251,7 +247,6 @@ always @(posedge clk) begin
   end
 end
 
-assign request_done = rest_n && (state == state_idle) && ((resp_valid == 1'd0) || (resp_ready == 1'd1));
 assign read_data     = rcvd_data[8:1];
 
 endmodule
