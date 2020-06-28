@@ -37,15 +37,20 @@ module dmt_timing_generate(
 `endif
 
 logic       vde;
-logic       hde;
+logic       hde_t;
 logic[31:0] vcount;
 logic[15:0] hcount;
 
-assign vde   = (vcount>=(V_SYNC+V_BP)*H_TT)&(vcount<(V_SYNC+V_BP+V_ACTIVE)*H_TT);
-assign vsycn = (vcount<(V_SYNC*H_TT-1'd1))?VS_POL:~VS_POL;
-assign hde   = vde&&(hcount>=H_SYNC+H_BP)&(hcount<H_SYNC+H_BP+H_ACTIVE);
-assign hsync = (hcount<H_SYNC)?HS_POL:~HS_POL;
-assign de    = hde;
+assign vde      = (vcount>=(V_SYNC+V_BP)*H_TT)&(vcount<(V_SYNC+V_BP+V_ACTIVE)*H_TT);
+assign vsycn_t  = (vcount<(V_SYNC*H_TT-1'd1))?VS_POL:~VS_POL;
+assign hde_t    = vde&&(hcount>=H_SYNC+H_BP)&(hcount<H_SYNC+H_BP+H_ACTIVE);
+assign hsync_t  = (hcount<H_SYNC)?HS_POL:~HS_POL;
+
+always @(posedge pixe_clk) begin
+  hsync <= hsync_t;
+  vsycn <= vsycn_t;
+  de    <= hde_t;
+end
 
 always @(posedge pixe_clk or negedge rest_n) begin
   if(!rest_n) begin

@@ -1,4 +1,4 @@
-module ov5640(
+module ov5640_test(
   input  logic        clk,
   input  logic        rest_n,
   /*ov5640*/
@@ -41,7 +41,7 @@ logic[15:0]     write_data;
 logic           addr_clean;
 logic[1:0]      occupy_block_num;
 logic[1:0]      disp_block_num;
-i_avl_bus       avl_bus_in[1:0]();
+i_avl_bus       avl_bus_in[3:0]();
 i_avl_bus       avl_bus_out[0:0]();
 
 logic[15:0]     fifo_read_data;
@@ -95,7 +95,7 @@ frame_write frame_write_inst0(
   .fifo_addr_clean  (addr_clean      ),
   .avl_m0           (avl_bus_in[0]   ),
   .disp_block_num   (disp_block_num  ),
-  .occupy_block_num_screenshot(2'd3 ),
+  .occupy_block_num_screenshot(2'd3  ),
   .occupy_block_num (occupy_block_num)
 );
 /********************************************************************************************************
@@ -152,11 +152,11 @@ dmt_timing_generate dmt_timing_generate_inst0(
 4主机,1从机总线控制器
 ********************************************************************************************************/
 
-//avl_bus_default_master avl_bus_default_master_inst1(avl_bus_in[2]);
-//avl_bus_default_master avl_bus_default_master_inst2(avl_bus_in[3]);
+avl_bus_default_master avl_bus_default_master_inst1(avl_bus_in[2]);
+avl_bus_default_master avl_bus_default_master_inst2(avl_bus_in[3]);
 
 avl_bus_n2n #(
-  .MASTER_NUM                 (2),
+  .MASTER_NUM                 (4),
   .SLAVE_NUM                  (1),
   .ARB_METHOD                 (0),
   .BUS_N21_SEL_FIFO_DEPTH     (2),

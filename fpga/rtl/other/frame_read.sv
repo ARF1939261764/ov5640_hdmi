@@ -7,29 +7,38 @@ module frame_read(
   input  logic       fifo_addr_clean,
   i_avl_bus.master   avl_m0,
   input  logic[1:0]  occupy_block_num_screenshot,
-  input  logic[1:0]  occupy_block_num_write
+  input  logic[1:0]  occupy_block_num_write,
+  input  logic[1:0]  disp_block_num
 );
 
 logic       wrreq;
 logic       rdempty;
-logic[10:0] rdusedw;
+logic[10:0] wrusedw;
 logic[31:0] count;
 logic[1:0]  index;
 logic[1:0]  index_add_1;
 logic[1:0]  index_add_2;
 logic       addr_clean_d0,addr_clean_d1,addr_clean;
-logic[10:0] rdusedw_q;
+logic[10:0] wrusedw_q;
+logic       last_addr_clean,now_addr_clean,addr_clean_pos;
 
 /*异步信号处理*/
 always @(posedge clk) begin
   addr_clean   <= addr_clean_d1;
   addr_clean_d1<=addr_clean_d0;
   addr_clean_d0<=fifo_addr_clean;
-  rdusedw_q<=rdusedw;
+  wrusedw_q<=wrusedw;
 end
 
 assign index_add_1 = index + 2'd1;
 assign index_add_2 = index + 2'd2;
+
+always @(posedge clk) begin
+  last_addr_clean <= now_addr_clean;
+  now_addr_clean  <= addr_clean;
+end
+
+assign addr_clean_pos = !last_addr_clean&&now_addr_clean;
 
 /********************************************************************************************************
 状态机
@@ -44,22 +53,17 @@ always @(posedge clk or negedge rest_n) begin
     index <= 1'd0;
   end
   else begin
+    if(addr_clean_pos) begin
+      index<=disp_block_num;
+    end
     case(state)
       state_idle:begin
-          avl_m0.begin_burst_transfer <= 1'd1;
           avl_m0.burst_count <= 8'd255;
-          if(!rdusedw_q[8]) begin/*小于256*/
+          if((wrusedw_q[10:8]==0)&&!addr_clean) begin/*小于256*/
             avl_m0.read <= 1'd1;
             state <= state_read_data;
-            if(
-                (index_add_1 == occupy_block_num_write)||
-                ((index_add_1 == occupy_block_num_screenshot)&&(index_add_2 == occupy_block_num_write))
-              ) begin
-              index <= index;
-            end
-            else begin
-              index <= (index_add_1 == occupy_block_num_screenshot)?index_add_2:index_add_1;
-            end
+            avl_m0.begin_burst_transfer <= 1'd1;
+            
           end
           else begin
             avl_m0.read <= 1'd0;
@@ -70,7 +74,7 @@ always @(posedge clk or negedge rest_n) begin
           if(avl_m0.request_ready) begin
             avl_m0.begin_burst_transfer <= 1'd0;
           end
-          if(count[7:0] == 8'd255) begin
+          if((count[7:0] == 8'd255)&&avl_m0.request_ready) begin
             avl_m0.read <= 1'd0;
             state <= state_idle;
           end
@@ -109,7 +113,7 @@ aysnc_fifo_32_to_16 aysnc_fifo_32_to_16_inst0(
 	.wrreq  (avl_m0.read_data_valid   ),
 	.q      (fifo_read_data           ),
 	.rdempty(rdempty                  ),
-	.rdusedw(rdusedw                  )
+	.wrusedw(wrusedw                  )
 );
 
 endmodule

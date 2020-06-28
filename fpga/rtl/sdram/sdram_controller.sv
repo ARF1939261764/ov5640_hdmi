@@ -5,7 +5,7 @@ module sdram_controller #(
   /*clk=100MHZ*/
   parameter T_PowerUp   =  32'd20000,/*上电时间*/
             T_RP        =  8'd2,    /*预充电时间*/
-            T_RFC       =  8'd7,    /*自动刷新时间*/
+            T_RFC       =  8'd8,    /*自动刷新时间*/
             T_MRD       =  8'd2,    /*设置模式寄存器时间*/
             T_CL        =  8'd3,    /*潜伏期*/
             T_RCD       =  8'd3,    /*行激活到列读写延迟*/
@@ -187,14 +187,6 @@ logic[15:0]                   rw_num_t3;
 logic[15:0]                   rw_num_t4;
 logic[$clog2(`ALV_BURST_MAX_COUNT)+1:0] rw_num;
 
-/********************************************************************************************************
-端口数据
-********************************************************************************************************/
-assign sdram_data      =  sdram_data_dir?sdram_data_o:16'hzzzz;
-assign sdram_data_i   = sdram_data;
-assign sdram_clk      =  ~clk;
-assign sdram_data_dir = write?1'd1:1'd0;
-assign {sdram_cke,sdram_cs_n,sdram_ras_n,sdram_cas_n,sdram_we_n}=sdram_cmd;
 
 /********************************************************************************************************
 上电等待
@@ -411,6 +403,16 @@ always @(posedge clk or negedge rest_n) begin
     endcase
   end
 end
+
+
+/********************************************************************************************************
+端口数据
+********************************************************************************************************/
+assign sdram_data      =  sdram_data_dir?sdram_data_o:16'hzzzz;
+assign sdram_data_i   = sdram_data;
+assign sdram_clk      =  ~clk;
+assign sdram_data_dir = (state == w_read_data)?1'd0:1'd1;
+assign {sdram_cke,sdram_cs_n,sdram_ras_n,sdram_cas_n,sdram_we_n}=sdram_cmd;
 
 /********************************************************************************************************
 刷新计数器

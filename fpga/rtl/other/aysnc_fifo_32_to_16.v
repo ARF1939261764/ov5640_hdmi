@@ -45,7 +45,7 @@ module aysnc_fifo_32_to_16 (
 	wrreq,
 	q,
 	rdempty,
-	rdusedw);
+	wrusedw);
 
 	input	  aclr;
 	input	[31:0]  data;
@@ -55,7 +55,7 @@ module aysnc_fifo_32_to_16 (
 	input	  wrreq;
 	output	[15:0]  q;
 	output	  rdempty;
-	output	[10:0]  rdusedw;
+	output	[9:0]  wrusedw;
 `ifndef ALTERA_RESERVED_QIS
 // synopsys translate_off
 `endif
@@ -66,10 +66,10 @@ module aysnc_fifo_32_to_16 (
 
 	wire [15:0] sub_wire0;
 	wire  sub_wire1;
-	wire [10:0] sub_wire2;
+	wire [9:0] sub_wire2;
 	wire [15:0] q = sub_wire0[15:0];
 	wire  rdempty = sub_wire1;
-	wire [10:0] rdusedw = sub_wire2[10:0];
+	wire [9:0] wrusedw = sub_wire2[9:0];
 
 	dcfifo_mixed_widths	dcfifo_mixed_widths_component (
 				.aclr (aclr),
@@ -80,12 +80,12 @@ module aysnc_fifo_32_to_16 (
 				.wrreq (wrreq),
 				.q (sub_wire0),
 				.rdempty (sub_wire1),
-				.rdusedw (sub_wire2),
+				.wrusedw (sub_wire2),
 				.eccstatus (),
 				.rdfull (),
+				.rdusedw (),
 				.wrempty (),
-				.wrfull (),
-				.wrusedw ());
+				.wrfull ());
 	defparam
 		dcfifo_mixed_widths_component.add_usedw_msb_bit = "ON",
 		dcfifo_mixed_widths_component.intended_device_family = "Cyclone 10 LP",
@@ -96,13 +96,13 @@ module aysnc_fifo_32_to_16 (
 		dcfifo_mixed_widths_component.lpm_widthu = 10,
 		dcfifo_mixed_widths_component.lpm_widthu_r = 11,
 		dcfifo_mixed_widths_component.lpm_width_r = 16,
-		dcfifo_mixed_widths_component.overflow_checking = "OFF",
-		dcfifo_mixed_widths_component.rdsync_delaypipe = 4,
+		dcfifo_mixed_widths_component.overflow_checking = "ON",
+		dcfifo_mixed_widths_component.rdsync_delaypipe = 5,
 		dcfifo_mixed_widths_component.read_aclr_synch = "ON",
-		dcfifo_mixed_widths_component.underflow_checking = "OFF",
+		dcfifo_mixed_widths_component.underflow_checking = "ON",
 		dcfifo_mixed_widths_component.use_eab = "ON",
 		dcfifo_mixed_widths_component.write_aclr_synch = "ON",
-		dcfifo_mixed_widths_component.wrsync_delaypipe = 4;
+		dcfifo_mixed_widths_component.wrsync_delaypipe = 5;
 
 
 endmodule
@@ -123,11 +123,11 @@ endmodule
 // Retrieval info: PRIVATE: LE_BasedFIFO NUMERIC "0"
 // Retrieval info: PRIVATE: LegacyRREQ NUMERIC "0"
 // Retrieval info: PRIVATE: MAX_DEPTH_BY_9 NUMERIC "0"
-// Retrieval info: PRIVATE: OVERFLOW_CHECKING NUMERIC "1"
-// Retrieval info: PRIVATE: Optimize NUMERIC "0"
+// Retrieval info: PRIVATE: OVERFLOW_CHECKING NUMERIC "0"
+// Retrieval info: PRIVATE: Optimize NUMERIC "2"
 // Retrieval info: PRIVATE: RAM_BLOCK_TYPE NUMERIC "0"
 // Retrieval info: PRIVATE: SYNTH_WRAPPER_GEN_POSTFIX STRING "0"
-// Retrieval info: PRIVATE: UNDERFLOW_CHECKING NUMERIC "1"
+// Retrieval info: PRIVATE: UNDERFLOW_CHECKING NUMERIC "0"
 // Retrieval info: PRIVATE: UsedW NUMERIC "1"
 // Retrieval info: PRIVATE: Width NUMERIC "32"
 // Retrieval info: PRIVATE: dc_aclr NUMERIC "1"
@@ -136,12 +136,12 @@ endmodule
 // Retrieval info: PRIVATE: output_width NUMERIC "16"
 // Retrieval info: PRIVATE: rsEmpty NUMERIC "1"
 // Retrieval info: PRIVATE: rsFull NUMERIC "0"
-// Retrieval info: PRIVATE: rsUsedW NUMERIC "1"
+// Retrieval info: PRIVATE: rsUsedW NUMERIC "0"
 // Retrieval info: PRIVATE: sc_aclr NUMERIC "0"
 // Retrieval info: PRIVATE: sc_sclr NUMERIC "0"
 // Retrieval info: PRIVATE: wsEmpty NUMERIC "0"
 // Retrieval info: PRIVATE: wsFull NUMERIC "0"
-// Retrieval info: PRIVATE: wsUsedW NUMERIC "0"
+// Retrieval info: PRIVATE: wsUsedW NUMERIC "1"
 // Retrieval info: LIBRARY: altera_mf altera_mf.altera_mf_components.all
 // Retrieval info: CONSTANT: ADD_USEDW_MSB_BIT STRING "ON"
 // Retrieval info: CONSTANT: INTENDED_DEVICE_FAMILY STRING "Cyclone 10 LP"
@@ -152,22 +152,22 @@ endmodule
 // Retrieval info: CONSTANT: LPM_WIDTHU NUMERIC "10"
 // Retrieval info: CONSTANT: LPM_WIDTHU_R NUMERIC "11"
 // Retrieval info: CONSTANT: LPM_WIDTH_R NUMERIC "16"
-// Retrieval info: CONSTANT: OVERFLOW_CHECKING STRING "OFF"
-// Retrieval info: CONSTANT: RDSYNC_DELAYPIPE NUMERIC "4"
+// Retrieval info: CONSTANT: OVERFLOW_CHECKING STRING "ON"
+// Retrieval info: CONSTANT: RDSYNC_DELAYPIPE NUMERIC "5"
 // Retrieval info: CONSTANT: READ_ACLR_SYNCH STRING "ON"
-// Retrieval info: CONSTANT: UNDERFLOW_CHECKING STRING "OFF"
+// Retrieval info: CONSTANT: UNDERFLOW_CHECKING STRING "ON"
 // Retrieval info: CONSTANT: USE_EAB STRING "ON"
 // Retrieval info: CONSTANT: WRITE_ACLR_SYNCH STRING "ON"
-// Retrieval info: CONSTANT: WRSYNC_DELAYPIPE NUMERIC "4"
+// Retrieval info: CONSTANT: WRSYNC_DELAYPIPE NUMERIC "5"
 // Retrieval info: USED_PORT: aclr 0 0 0 0 INPUT GND "aclr"
 // Retrieval info: USED_PORT: data 0 0 32 0 INPUT NODEFVAL "data[31..0]"
 // Retrieval info: USED_PORT: q 0 0 16 0 OUTPUT NODEFVAL "q[15..0]"
 // Retrieval info: USED_PORT: rdclk 0 0 0 0 INPUT NODEFVAL "rdclk"
 // Retrieval info: USED_PORT: rdempty 0 0 0 0 OUTPUT NODEFVAL "rdempty"
 // Retrieval info: USED_PORT: rdreq 0 0 0 0 INPUT NODEFVAL "rdreq"
-// Retrieval info: USED_PORT: rdusedw 0 0 11 0 OUTPUT NODEFVAL "rdusedw[10..0]"
 // Retrieval info: USED_PORT: wrclk 0 0 0 0 INPUT NODEFVAL "wrclk"
 // Retrieval info: USED_PORT: wrreq 0 0 0 0 INPUT NODEFVAL "wrreq"
+// Retrieval info: USED_PORT: wrusedw 0 0 10 0 OUTPUT NODEFVAL "wrusedw[9..0]"
 // Retrieval info: CONNECT: @aclr 0 0 0 0 aclr 0 0 0 0
 // Retrieval info: CONNECT: @data 0 0 32 0 data 0 0 32 0
 // Retrieval info: CONNECT: @rdclk 0 0 0 0 rdclk 0 0 0 0
@@ -176,7 +176,7 @@ endmodule
 // Retrieval info: CONNECT: @wrreq 0 0 0 0 wrreq 0 0 0 0
 // Retrieval info: CONNECT: q 0 0 16 0 @q 0 0 16 0
 // Retrieval info: CONNECT: rdempty 0 0 0 0 @rdempty 0 0 0 0
-// Retrieval info: CONNECT: rdusedw 0 0 11 0 @rdusedw 0 0 11 0
+// Retrieval info: CONNECT: wrusedw 0 0 10 0 @wrusedw 0 0 10 0
 // Retrieval info: GEN_FILE: TYPE_NORMAL aysnc_fifo_32_to_16.v TRUE
 // Retrieval info: GEN_FILE: TYPE_NORMAL aysnc_fifo_32_to_16.inc FALSE
 // Retrieval info: GEN_FILE: TYPE_NORMAL aysnc_fifo_32_to_16.cmp FALSE

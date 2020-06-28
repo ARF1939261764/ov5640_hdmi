@@ -53,7 +53,7 @@ initial begin
   avl_bus.read  = 0;
   #100;
   rest_n =1;
-  #100;
+  #200000;
   avl_bus.address              = 0;
   avl_bus.byte_en              = 15;
   avl_bus.write                = 1;
@@ -61,7 +61,18 @@ initial begin
   avl_bus.write_data           = 32'h12345678;
   avl_bus.begin_burst_transfer = 1'd1;
   avl_bus.burst_count          = 8'd255;
-  avl_bus.resp_ready           = 1'd0;
+  avl_bus.resp_ready           = 1'd1;
+  #100;
+  avl_bus.write                = 0;
+  #100000;
+  avl_bus.address              = 0;
+  avl_bus.byte_en              = 15;
+  avl_bus.write                = 0;
+  avl_bus.read                 = 1;
+  avl_bus.write_data           = 32'h12345678;
+  avl_bus.begin_burst_transfer = 1'd1;
+  avl_bus.burst_count          = 8'd255;
+  avl_bus.resp_ready           = 1'd1;
 end
 
 always #3.76 clk = ~clk;
