@@ -13,6 +13,14 @@ logic[31:0] fifo_read_data;
 logic       fifo_rdempty;
 logic[11:0] fifo_rdusedw;
 logic[31:0] count;
+logic       addr_clean_d0,addr_clean_d1,addr_clean;
+
+/*异步信号处理*/
+always @(posedge clk) begin
+  addr_clean   <= addr_clean_d1;
+  addr_clean_d1<=addr_clean_d0;
+  addr_clean_d0<=fifo_addr_clean;
+end
 
 /********************************************************************************************************
 状态机
@@ -41,20 +49,24 @@ always @(posedge clk or negedge rest_n) begin
             avl_m0.write <= 1'd0;
             state       <= state_idle;
           end
-          count <= 1'd0;
         end
       state_write_data:begin
-          avl_m0.begin_burst_transfer <= 1'd0;
+          if(avl_m0.request_ready) begin
+            avl_m0.begin_burst_transfer <= 1'd0;
+          end
           if((count[7:0]==8'd255)&&avl_m0.request_ready) begin
             avl_m0.write <= 1'd0;
             state <= state_idle;
+          end
+          else begin
+            state <= state_write_data;
           end
         end
       default:begin
           state <= state_idle;
         end
     endcase
-    if(fifo_addr_clean) begin
+    if(addr_clean) begin
       count<=1'd0;
     end
     else if(avl_m0.request_ready) begin
@@ -65,7 +77,7 @@ end
 /********************************************************************************************************
 给出写SDRAM的相关信号
 ********************************************************************************************************/
-assign avl_m0.address    = {9'd0,occupy_block_num[1:0],count[18:8],10'd0};
+assign avl_m0.address    = {9'd0,occupy_block_num[1:0],count[18:0],2'd0};
 assign avl_m0.read       = 1'd0;
 assign avl_m0.byte_en    = 4'hf;
 assign avl_m0.write_data = fifo_read_data;
@@ -74,7 +86,7 @@ assign avl_m0.resp_ready = 1'd0;
 fifo实例
 ********************************************************************************************************/
 aysnc_fifo_16_to_32 aysnc_fifo_16_to_32_inst0(
-	.aclr   (fifo_addr_clean||!rest_n ),
+	.aclr   (addr_clean||!rest_n      ),
 	.data   (fifo_write_data          ),
 	.rdclk  (clk                      ),
 	.rdreq  (avl_m0.request_ready     ),

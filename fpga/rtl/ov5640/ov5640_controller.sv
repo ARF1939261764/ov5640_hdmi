@@ -1,4 +1,5 @@
 module ov5640_controller (
+	input logic        ov5640_clk,
   input logic        sccb_clk,
   input logic        rest_n,
   output logic       ov5640_scl,
@@ -65,8 +66,6 @@ ov5640_config ov5640_config_inst0(
 /********************************************************************************************************
 PLL
 ********************************************************************************************************/
-always @(posedge sccb_clk) begin
-	ov5640_xclk = ~ov5640_xclk;
-end
+assign ov5640_xclk = ov5640_clk;
 
 endmodule

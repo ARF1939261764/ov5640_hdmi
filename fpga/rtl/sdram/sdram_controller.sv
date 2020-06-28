@@ -155,9 +155,10 @@ module sdram_controller_core #(
 `define end_w_read_cmd              (count == T_CL-32'd1              )
 `define end_w_read_data             (count == rw_num_t1               )
 `define end_w_write_data            (count == rw_num_t2               )/*写完后等两个时钟周期*/
+`define end_w_write_wait_done       (count == T_WR-1'd1               )
 `define end_w_percharge             (count == T_RP-32'd1              )
 `define flag_r_send_term            (count == rw_num_t3               )
-`define flag_w_send_term            (count == rw_num_t4               )
+`define flag_w_send_term            (count == 1'd0                    )
 
 localparam ModeRegValue={
   3'b000,/*保留*/
@@ -211,7 +212,7 @@ end
 
 always @(posedge clk) begin
   rw_num_t1 <= rw_num-1'd1;
-  rw_num_t2 <= rw_num-1'd1+T_WR;
+  rw_num_t2 <= rw_num-1'd1;
   rw_num_t3 <= rw_num-2'd2;
   rw_num_t4 <= rw_num;
 end
@@ -229,7 +230,8 @@ localparam i_power_up             =8'd0,/*等待上电稳定*/
           w_read_cmd              =8'd7,/*发出读命令,同时给出数据的列地址*/
           w_read_data             =8'd8,/*读出数据*/
           w_write_data            =8'd9,/*写入数据并等待数据写完*/
-          w_percharge             =8'd10;/*预充电(不使用自动预充电)*/
+          w_write_wait_done       =8'd10,
+          w_percharge             =8'd11;/*预充电(不使用自动预充电)*/
 
 reg[7:0] state;
 /*第一段:计算下一个clock的状态*/
@@ -283,14 +285,17 @@ always @(posedge clk or negedge rest_n) begin
           state<=`end_w_read_data?w_percharge:w_read_data;
         end
       w_write_data:begin
-          state<=`end_w_write_data?w_percharge:w_write_data;
+          state<=`end_w_write_data?w_write_wait_done:w_write_data;
+        end
+      w_write_wait_done:begin
+          state <= `end_w_write_wait_done?w_percharge:w_write_wait_done;
+        end
+      w_percharge:begin
+        state <= `end_w_percharge?w_idle:w_percharge;
         end
       default:begin
           state<=i_power_up;
         end
-      w_percharge:begin
-        state <= `end_w_percharge?w_idle:w_percharge;
-      end
     endcase
   end
 end
@@ -382,10 +387,16 @@ always @(posedge clk or negedge rest_n) begin
             sdram_cmd <= `CMD_WRITE;
           end
           else begin
-            sdram_cmd <= `flag_w_send_term?`CMD_TERMINATE:`CMD_NOP;
+            sdram_cmd = `CMD_NOP;
           end
           /*count自加1*/
           count<=`end_w_write_data?16'd0:(count+16'd1);
+        end
+      w_write_wait_done:begin
+          sdram_cmd = `flag_w_send_term?`CMD_TERMINATE:`CMD_NOP;
+          request_ready = 1'd0;
+          /*count自加1*/
+          count<=`end_w_write_wait_done?16'd0:(count+16'd1);
         end
       w_percharge:begin
           read_data_valid<=1'd0;
