@@ -152,7 +152,7 @@ module sdram_controller_core #(
 `define end_i_set_mode_reg          (count == T_MRD-32'd1             )
 `define end_w_auto_ref              (count == T_RFC-32'd1             )
 `define end_w_active_row            (count == T_RCD-32'd1             )
-`define end_w_read_cmd              (count == T_CL-32'd1              )
+`define end_w_read_cmd              (count == T_CL                    )
 `define end_w_read_data             (count == rw_num_t1               )
 `define end_w_write_data            (count == rw_num_t2               )/*写完后等两个时钟周期*/
 `define end_w_write_wait_done       (count == T_WR-1'd1               )
@@ -164,7 +164,7 @@ localparam ModeRegValue={
   3'b000,/*保留*/
   1'b0,/*突发读/写*/
   2'b00,/*保留*/
-  {1'd0,T_CL[1:0]},/*潜伏期为2*/
+  {1'd0,T_CL[1:0]},/*潜伏期*/
   1'b0,/*顺序模式*/
   3'b111
 };

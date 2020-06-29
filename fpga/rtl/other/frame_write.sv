@@ -101,7 +101,7 @@ end
 assign avl_m0.address    = {9'd0,occupy_block_num[1:0],count[18:0],2'd0};
 assign avl_m0.read       = 1'd0;
 assign avl_m0.byte_en    = 4'hf;
-assign avl_m0.write_data = {fifo_read_data[15:0],fifo_read_data[31:16]};
+assign avl_m0.write_data = fifo_read_data;
 assign avl_m0.resp_ready = 1'd0;
 /********************************************************************************************************
 fifo实例
